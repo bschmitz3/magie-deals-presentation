@@ -1,0 +1,465 @@
+# Magie Deals Presentation — Cursor Rules
+
+## 1. Project Overview
+
+**Magie Deals Presentation** is an internal tool for Magie that generates a visual presentation of B2B deals for weekly All Hands meetings. It replaces the manual process of formatting HubSpot deal data into a presentation-friendly layout.
+
+### How it works
+
+1. The user exports a CSV file from HubSpot with the latest deal data.
+2. In the app, the user enters the **presentation date** and uploads the **CSV file**.
+3. On clicking **"Let's go!"**, the app parses the CSV and renders a full-screen presentation board showing deals organized by pipeline stage, with company logos, summary scores, and clickable detail overlays.
+
+### Tech stack
+
+- **Framework:** Next.js 14+ (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **CSV parsing:** PapaParse
+- **Deployment:** Vercel
+- **Logo hosting:** GitHub repository (public, raw URLs)
+- **Fallback logos:** Google Favicon API (`https://www.google.com/s2/favicons?domain=COMPANY_DOMAIN&sz=128`)
+
+---
+
+## 2. Project Structure
+
+```
+magie-deals-presentation/
+├── public/
+│   └── magie-logo.svg              # Magie brand logo (white, for dark bg)
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx               # Root layout (dark theme, full viewport)
+│   │   ├── page.tsx                 # Cover page (upload form)
+│   │   └── presentation/
+│   │       └── page.tsx             # Presentation board page
+│   ├── components/
+│   │   ├── CoverPage.tsx            # Upload form component
+│   │   ├── PresentationBoard.tsx    # Main board with columns and logos
+│   │   ├── DealColumn.tsx           # Single pipeline stage column
+│   │   ├── DealCard.tsx             # Individual logo card (clickable)
+│   │   ├── ClientDetailOverlay.tsx  # Right-side overlay panel
+│   │   ├── ScoreBadge.tsx           # Top-right score badges (Deals, Customers, Channels)
+│   │   └── Header.tsx               # Top header with title, date, and scores
+│   ├── lib/
+│   │   ├── parseCSV.ts             # CSV parsing and data transformation
+│   │   ├── types.ts                # TypeScript interfaces
+│   │   ├── constants.ts            # Pipeline stages, stage mappings, mock data
+│   │   └── logoResolver.ts         # Logo URL resolution (GitHub → fallback)
+│   └── stores/
+│       └── dealStore.ts            # State management (React Context or Zustand)
+├── logos/                           # Reference: logo files to upload to GitHub repo
+├── .cursorrules
+├── tailwind.config.ts
+├── next.config.js
+├── tsconfig.json
+└── package.json
+```
+
+---
+
+## 3. Data Model
+
+### 3.1. CSV Input Format (HubSpot Export)
+
+The CSV exported from HubSpot has these columns:
+
+|Column|CSV Header|Description|
+|---|---|---|
+|A|Record ID|HubSpot internal ID|
+|B|Deal Name|Company/client name|
+|C|Deal Stage|Pipeline stage (raw from HubSpot)|
+|D|Close Date|Expected close date|
+|E|Deal owner|Sales rep name|
+|F|Amount|Deal value (often empty)|
+
+### 3.2. Stage Mapping
+
+The HubSpot CSV contains various stages. Map them to the presentation stages as follows:
+
+```typescript
+const STAGE_MAPPING: Record<string, string> = {
+  "First Outreach": "First Outreach",
+  "Intro Call Scheduled": "Call Scheduled",
+  "Qualifying": "Qualifying",
+  "Client Internal Review": "Client Internal Review",
+  "scope definition": "Scope Definition",    // Note: lowercase in CSV
+  "Proposal Sent": "Proposal Sent",
+  "Closed Won (Integration)": "Closed Won",  // Note: includes suffix in CSV
+};
+```
+
+**Important:** Any stage NOT in this mapping must be **filtered out** of the presentation. Stages like `Lead`, `Later FUP`, `No Response / Stale`, and `Disqualified` are excluded.
+
+### 3.3. Presentation Column Order
+
+Columns must appear left-to-right in this exact order:
+
+1. First Outreach
+2. Call Scheduled
+3. Qualifying
+4. Client Internal Review
+5. Scope Definition
+6. Proposal Sent
+7. Closed Won
+
+### 3.4. TypeScript Interfaces
+
+```typescript
+interface Deal {
+  recordId: string;
+  dealName: string;        // Company name from CSV
+  dealStage: string;       // Mapped presentation stage
+  rawStage: string;        // Original CSV stage
+  closeDate: string;
+  dealOwner: string;
+  amount: string;
+  category: string;        // MVP: mocked — e.g. "Fintech", "Insurance", "Retail"
+  type: "Customer" | "Channel"; // MVP: mocked
+  logoUrl: string;         // Resolved logo URL
+}
+
+interface PresentationData {
+  date: string;            // Presentation date (dd/mm/yyyy)
+  deals: Deal[];
+  scores: {
+    totalDeals: number;    // All deals in visible stages
+    customers: number;     // Deals where type === "Customer"
+    channels: number;      // Deals where type === "Channel"
+  };
+}
+```
+
+### 3.5. Mock Data for Category and Type (MVP)
+
+Since the CSV does not yet have `Category` and `Type` columns, generate mock values:
+
+```typescript
+// Category: randomly assign from this list based on deal name (keep consistent per company)
+const CATEGORIES = ["Fintech", "Insurance", "Retail", "Logistics", "Agritech", "SaaS", "Banking", "Payments"];
+
+// Type: assign "Customer" to ~70% of deals, "Channel" to ~30%
+// Use a deterministic method (e.g., hash of deal name) so the same deal always gets the same type
+```
+
+---
+
+## 4. Logo Resolution Strategy
+
+### 4.1. Primary Source — GitHub Repository
+
+Logos are stored in a public GitHub repository. The naming convention for logo files:
+
+```
+https://raw.githubusercontent.com/{OWNER}/{REPO}/main/logos/{slug}.png
+```
+
+Where `{slug}` is the company name normalized:
+
+- Lowercase
+- Remove accents and special characters
+- Replace spaces with hyphens
+- Remove suffixes like "Banco", "Bank", parenthetical content
+
+Examples:
+
+|Deal Name|Slug|
+|---|---|
+|99 PAY|99|
+|Banco BV|bv|
+|Banco BS2|bs2|
+|Porto Seguro|porto-seguro|
+|ifood|ifood|
+|Natura / Emana Pay|natura|
+|interbank (peru)|interbank|
+|MercadoBitcoin (MB)|mercadobitcoin|
+|PlugZ (Semenzato)|plugz|
+|UY3 (canal BaaS)|uy3|
+|Grupo Primo (primo rico)|grupo-primo|
+|CRM Bonus + Havan: ...|crm-bonus|
+
+### 4.2. Fallback — Favicon API
+
+If the GitHub logo returns a 404, use Google Favicons as fallback:
+
+```
+https://www.google.com/s2/favicons?domain={domain}&sz=128
+```
+
+For this, maintain a `DOMAIN_MAP` dictionary that maps deal names to website domains:
+
+```typescript
+const DOMAIN_MAP: Record<string, string> = {
+  "99": "99app.com",
+  "ifood": "ifood.com.br",
+  "Itaú": "itau.com.br",
+  "Magalu": "magazineluisa.com.br",
+  // ... etc
+};
+```
+
+### 4.3. Final Fallback — Initial Letter Avatar
+
+If both GitHub and Favicon fail, render a colored square with the first letter(s) of the company name. Use a deterministic color based on the company name hash.
+
+---
+
+## 5. UI/UX Specification
+
+### 5.1. General Design Rules
+
+- **Target resolution:** 1920×1080 (optimized for desktop presentation mode)
+- **Background:** Dark (`#1A1A1A` or similar very dark gray, almost black)
+- **Text:** White (`#FFFFFF`) and muted gray (`#888888`) for labels
+- **Accent:** Green (`#4CAF50` or Magie brand green `#4ADE80`)
+- **Font:** Inter or system sans-serif
+- **Layout:** Full viewport, no scrolling on the presentation board — content must fit
+- **Border radius on logos:** `8px` (rounded squares)
+
+### 5.2. Cover Page (`/`)
+
+The cover page is the entry point. Layout:
+
+- **Dark background** matching the main theme
+- **Centered card** (approx 960×600px) with slightly lighter dark bg (`#262626`)
+- **Inside the card (left side):**
+    - Magie logo (top-left)
+    - Title: **"B2B Deal Presentation"** in bold white
+    - Date input: labeled "Presentation Date", format `dd/mm/yyyy`, with calendar icon
+    - Upload button: green button **"Upload Hubspot Deals file"** — triggers file picker for `.csv`
+    - After upload: show filename below the button
+    - Horizontal separator line
+    - **"Let's go!"** button — disabled/gray until both date and file are provided; green when active
+- **Right side of card:** decorative 3D green Magie hat illustration (use a static image or CSS gradient placeholder)
+
+### 5.3. Presentation Board (`/presentation`)
+
+#### Header Section
+
+- **Top-left:** Magie logo icon + **"DEALS"** in large bold caps + subtitle "ALL HANDS • {date}" in muted gray
+- **Top-right:** Score badges in pill/rounded-rect shapes:
+    - `🎯 DEALS | {count}` — total deals across all visible stages
+    - `🏢 CUSTOMERS | {count}` — deals with type "Customer"
+    - `🔗 CHANNELS | {count}` — deals with type "Channel"
+    - Each badge has a dark bg with subtle border, icon on left, label, pipe separator, and count
+
+#### Column Headers
+
+- Row of column headers below the header section
+- Each header: stage name in **bold uppercase** white text
+- Separated by subtle vertical dividers or equal spacing
+- Columns are evenly distributed across the viewport width
+
+#### Deal Grid (Logo Grid)
+
+- Below column headers, each column contains a grid of logo cards
+- **Logo cards:** Square tiles (~56–64px), rounded corners (8px), containing the company logo
+- Cards are arranged in a grid within each column (3–4 per row depending on column width)
+- **No company name text** — logos only
+- Logos should have a subtle dark border or shadow to stand out on the dark background
+- Cards should have a hover effect (slight scale up, brightness increase)
+
+#### Client Detail Overlay
+
+- **Triggered by:** clicking any logo card
+- **Position:** Fixed right-side panel (approx 300px wide), full height, with dark bg (`#1E1E1E`)
+- **Content:**
+    - Close button (X) at top-right
+    - Stage badge at top (e.g., "FIRST OUTREACH" in a green/yellow pill)
+    - Company logo (larger, ~48px) + Company name in bold white
+    - Info fields (label in gray, value in white):
+        - **Category:** e.g., "Fintech"
+        - **Type:** e.g., "Customer"
+        - **Deal Owner:** e.g., "Leonardo Rosa"
+- **Animation:** Slide in from right, 200ms ease-out
+- **Backdrop:** Optional subtle darken overlay on the left side
+
+### 5.4. Responsive Behavior
+
+This is a **desktop-only presentation tool**. No need for mobile responsiveness. Target:
+
+- Minimum width: 1280px
+- Optimal: 1920×1080
+- Logo grid should adapt: fewer columns of logos if viewport is narrower
+
+---
+
+## 6. Implementation Rules
+
+### 6.1. CSV Parsing
+
+- Use **PapaParse** for CSV parsing (handles quoted fields, commas in values, etc.)
+- Parse on the client side (no backend needed for MVP)
+- Strip quotes from all fields
+- Handle edge cases:
+    - Empty `Amount` fields
+    - Missing `Close Date`
+    - Case-insensitive stage matching (e.g., "scope definition" vs "Scope Definition")
+
+### 6.2. State Management
+
+- Use **React Context** or **Zustand** to store:
+    - Parsed deals array
+    - Presentation date
+    - Selected deal (for overlay)
+    - Loading/error states
+
+### 6.3. Routing
+
+- `/` — Cover page (upload form)
+- `/presentation` — Presentation board
+- After CSV is parsed and processed, navigate to `/presentation`
+- If user navigates to `/presentation` without data, redirect back to `/`
+
+### 6.4. Performance
+
+- Logo images should use `next/image` with lazy loading
+- Add `loading="lazy"` for off-screen logos
+- Handle broken images gracefully (show fallback avatar)
+- CSV parsing should show a brief loading state
+
+### 6.5. Code Style
+
+- Use **functional components** with hooks
+- Prefer **named exports**
+- Use **Tailwind CSS** utility classes (avoid custom CSS files where possible)
+- TypeScript strict mode enabled
+- All data types must have explicit interfaces
+- Use descriptive variable names in English
+- UI text (labels, titles) in **English** to match the Figma design
+- Comments can be in English or Portuguese
+
+---
+
+## 7. Step-by-Step Build Plan
+
+Follow this order when implementing the project:
+
+### Phase 1 — Project Setup
+
+1. Initialize Next.js project with TypeScript and Tailwind
+2. Configure `tailwind.config.ts` with dark theme colors
+3. Set up project folder structure
+4. Install PapaParse (`npm install papaparse @types/papaparse`)
+
+### Phase 2 — Data Layer
+
+5. Create `types.ts` with all interfaces
+6. Create `constants.ts` with stage mappings, column order, categories, domain map
+7. Create `parseCSV.ts` — function that takes raw CSV text, returns `PresentationData`
+8. Create `logoResolver.ts` — function that resolves logo URL for a deal name
+9. Create mock generators for `category` and `type`
+
+### Phase 3 — Cover Page
+
+10. Build `CoverPage.tsx` with date input, file upload, and "Let's go!" button
+11. Style to match the Figma mockup (dark card, green buttons)
+12. Wire up CSV parsing on file upload
+13. Navigate to `/presentation` on "Let's go!" click
+
+### Phase 4 — Presentation Board
+
+14. Build `Header.tsx` with logo, title, date, and score badges
+15. Build `ScoreBadge.tsx` component
+16. Build `DealColumn.tsx` — renders column header + grid of logo cards
+17. Build `DealCard.tsx` — single logo tile with hover effects and click handler
+18. Build `PresentationBoard.tsx` — orchestrates columns and layout
+19. Wire up real data from store/context
+
+### Phase 5 — Detail Overlay
+
+20. Build `ClientDetailOverlay.tsx` — right-side slide-in panel
+21. Add click handlers on `DealCard` to open overlay
+22. Add close button and backdrop click to dismiss
+
+### Phase 6 — Logo Pipeline
+
+23. Set up GitHub repository for logos
+24. Implement fallback chain: GitHub → Favicon → Letter Avatar
+25. Add `onError` handlers for broken images
+
+### Phase 7 — Polish
+
+26. Add transitions/animations (overlay slide, card hover)
+27. Test with real HubSpot CSV export
+28. Edge case handling (empty columns, many deals in one stage)
+29. Ensure everything fits in 1920×1080 without scrolling
+
+---
+
+## 8. Known Edge Cases
+
+- **"scope definition"** in CSV is lowercase — normalize before matching
+- **"Closed Won (Integration)"** — match with `startsWith("Closed Won")`
+- **"Intro Call Scheduled"** → maps to **"Call Scheduled"** in presentation
+- Some deal names contain extra context in parentheses: `"UY3 (canal BaaS)"`, `"interbank (peru)"` — strip parenthetical content for logo slug resolution
+- Some deal names contain slashes: `"Natura / Emana Pay"` — use first part for logo
+- Some deal names contain colons: `"CRM Bonus + Havan: debt collection"` — use first part before colon/plus
+- **Empty columns** are still shown with just the header (no logos underneath)
+- Deal owner field is used as-is from CSV (no normalization needed)
+
+---
+
+## 9. Design Tokens
+
+```css
+/* Colors */
+--bg-primary: #1A1A1A;
+--bg-card: #262626;
+--bg-overlay: #1E1E1E;
+--bg-column-header: #2A2A2A;
+--text-primary: #FFFFFF;
+--text-secondary: #888888;
+--text-muted: #555555;
+--accent-green: #4ADE80;
+--accent-green-dark: #22C55E;
+--border-subtle: #333333;
+--badge-bg: #2A2A2A;
+--badge-border: #3A3A3A;
+
+/* Spacing */
+--logo-size: 56px;
+--logo-gap: 8px;
+--logo-radius: 8px;
+--column-gap: 2px;
+--header-height: 140px;
+--overlay-width: 320px;
+
+/* Typography */
+--font-family: 'Inter', system-ui, sans-serif;
+--title-size: 64px;
+--subtitle-size: 14px;
+--column-header-size: 13px;
+--badge-label-size: 14px;
+--badge-count-size: 18px;
+--overlay-name-size: 24px;
+--overlay-label-size: 12px;
+--overlay-value-size: 16px;
+```
+
+---
+
+## 10. Do's and Don'ts
+
+### ✅ DO
+
+- Keep the UI full-screen and presentation-ready (no browser chrome clutter)
+- Use the dark theme consistently
+- Make logos square with rounded corners
+- Show all 7 columns even if some are empty
+- Keep the cover page simple and clean
+- Use deterministic mocking (same company → same category/type every time)
+- Handle image loading errors gracefully
+- Use semantic HTML and accessible markup
+
+### ❌ DON'T
+
+- Don't show company names on the board — logos only
+- Don't show deal stages that are not in the 7 specified stages
+- Don't add scrolling to the presentation board — everything must fit
+- Don't use light theme or white backgrounds
+- Don't hardcode deal data — always parse from CSV
+- Don't require a backend or database for the MVP
+- Don't use CSS modules or styled-components — use Tailwind
+- Don't add mobile responsiveness — this is desktop-only
