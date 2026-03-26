@@ -1,5 +1,85 @@
 import { AVATAR_COLORS, DOMAIN_MAP } from "./constants";
 
+// ---------------------------------------------------------------------------
+// MAINTENANCE NOTE:
+// When adding a new logo file to public/logos/, also add the filename (without
+// the .png extension) to the AVAILABLE_LOGOS array below. This powers the fuzzy
+// matching that automatically resolves deal names to their logo files.
+// ---------------------------------------------------------------------------
+
+// All logo filenames available in public/logos/ (without ".png").
+export const AVAILABLE_LOGOS: string[] = [
+  "180_seguros",
+  "99",
+  "adaflow",
+  "agibank",
+  "agrega",
+  "asaas",
+  "astropay",
+  "avenue",
+  "banco_bmg",
+  "banco_bs2",
+  "banco_bv",
+  "banco_daycoval",
+  "banco_do_brasil",
+  "banco_inter",
+  "banco_pan",
+  "banco_pine",
+  "banco_xp",
+  "binance",
+  "blip",
+  "bradesco",
+  "bull_cred_tech",
+  "c6_bank",
+  "capim",
+  "caveo",
+  "celcoin",
+  "cloudwalk",
+  "condoconta",
+  "conta_azul",
+  "conta_simples",
+  "contabilizei",
+  "cooperforte",
+  "cora",
+  "estrela_bet",
+  "facio",
+  "grao_direto",
+  "gupshup",
+  "ifood",
+  "interbank",
+  "ipiranga",
+  "itau",
+  "izi",
+  "magalu",
+  "mercado_bitcoin",
+  "natura",
+  "nomad",
+  "nstech",
+  "onfly",
+  "oxpay",
+  "passabot",
+  "pega_leve",
+  "picpay",
+  "plin_energia",
+  "plugz",
+  "porto_seguro",
+  "primo_rico",
+  "qi_tech",
+  "rica_alimentos",
+  "rodobens",
+  "santander",
+  "serasa",
+  "stark_bank",
+  "stone",
+  "swap",
+  "terra_magna",
+  "uy3",
+  "vigicred",
+  "vivo_pay",
+];
+
+const AVAILABLE_LOGOS_SET = new Set(AVAILABLE_LOGOS);
+
 // Deal Name (CSV) -> filename (public/logos) without ".png"
 // Keys are matched case-insensitively.
 export const LOGO_OVERRIDE_MAP: Record<string, string> = {
@@ -36,6 +116,7 @@ export const LOGO_OVERRIDE_MAP: Record<string, string> = {
   "bull": "bull_cred_tech",
   "CondoConta": "condoconta",
   "Itaú": "itau",
+  "Stark Bank/Infra": "stark_bank",
 };
 
 function hashStringToUint32(input: string): number {
@@ -79,6 +160,33 @@ export function generateSlug(dealName: string): string {
   base = base.replace(/\s+/g, "_");
   base = base.replace(/[^a-z0-9_]/g, "");
   base = base.replace(/_+/g, "_").replace(/^_|_$/g, "");
+
+  // --- Fuzzy matching against AVAILABLE_LOGOS ---
+
+  if (AVAILABLE_LOGOS_SET.has(base)) return base;
+
+  // 1. Try removing common suffixes
+  const COMMON_SUFFIXES = ["_bank", "_pay", "_tech", "_digital", "_brasil"];
+  for (const suffix of COMMON_SUFFIXES) {
+    if (base.endsWith(suffix)) {
+      const stripped = base.slice(0, -suffix.length);
+      if (stripped && AVAILABLE_LOGOS_SET.has(stripped)) return stripped;
+    }
+  }
+
+  // 2. Check if any available logo starts with the slug
+  const startsWithMatch = AVAILABLE_LOGOS.find((logo) => logo.startsWith(base));
+  if (startsWithMatch) return startsWithMatch;
+
+  // 3. Check if any available logo contains the slug
+  const containsMatch = AVAILABLE_LOGOS.find((logo) => logo.includes(base));
+  if (containsMatch) return containsMatch;
+
+  // 4. Check if the slug contains any available logo (longest match first)
+  const containedMatch = [...AVAILABLE_LOGOS]
+    .sort((a, b) => b.length - a.length)
+    .find((logo) => base.includes(logo));
+  if (containedMatch) return containedMatch;
 
   return base;
 }
