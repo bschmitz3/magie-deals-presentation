@@ -6,6 +6,7 @@ export const PRESENTATION_STAGES = [
   "Scope Definition",
   "Proposal Sent",
   "Closed Won",
+  "Pilot Validation",
 ] as const;
 
 export const STAGE_MAPPING: Record<string, string> = {
@@ -16,6 +17,7 @@ export const STAGE_MAPPING: Record<string, string> = {
   "scope definition": "Scope Definition",
   "Proposal Sent": "Proposal Sent",
   "Closed Won (Integration)": "Closed Won",
+  "Pilot Validation": "Pilot Validation",
 };
 
 export const CATEGORIES = [

@@ -30,17 +30,23 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
       </div>
 
       <div className="flex bg-[#262626] h-[40px]">
-        {PRESENTATION_STAGES.map((stageName, idx) => (
-          <div
-            key={stageName}
-            className={[
-              "flex-1 flex items-center justify-center text-[13px] font-bold uppercase text-[#FFFFFF] tracking-[1.5px]",
-              idx === 0 ? "" : "border-l border-[#2E2E2E]",
-            ].join(" ")}
-          >
-            {stageName}
-          </div>
-        ))}
+        {PRESENTATION_STAGES.map((stageName, idx) => {
+          const label =
+            stageName.length > 18
+              ? stageName.split(" ").slice(1).join(" ")
+              : stageName;
+          return (
+            <div
+              key={stageName}
+              className={[
+                "flex-1 flex items-center justify-center text-[11px] font-bold uppercase text-[#FFFFFF] tracking-[1px] text-center px-[4px]",
+                idx === 0 ? "" : "border-l border-[#2E2E2E]",
+              ].join(" ")}
+            >
+              {label}
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex flex-1">
