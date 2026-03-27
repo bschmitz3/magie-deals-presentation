@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import type { Deal, PresentationData } from "@/lib/types";
 import { PRESENTATION_STAGES } from "@/lib/constants";
@@ -8,8 +8,22 @@ import Header from "@/components/Header";
 import DealColumn from "@/components/DealColumn";
 import ClientDetailOverlay from "@/components/ClientDetailOverlay";
 
+const ALL_STAGES = [...PRESENTATION_STAGES];
+
 export default function PresentationBoard({ data }: { data: PresentationData }) {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [visibleStages, setVisibleStages] = useState<string[]>([...ALL_STAGES]);
+
+  const toggleStage = useCallback((stage: string) => {
+    setVisibleStages((prev) => {
+      if (prev.includes(stage)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter((s) => s !== stage);
+      }
+      const next = [...ALL_STAGES].filter((s) => prev.includes(s) || s === stage);
+      return next;
+    });
+  }, []);
 
   const dealsByStage = useMemo(() => {
     const map = new Map<string, Deal[]>();
@@ -26,14 +40,19 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
   return (
     <div className="w-[100vw] h-[100vh] overflow-hidden bg-[#141414] flex flex-col">
       <div className="mb-[8px]">
-        <Header date={data.date} />
+        <Header
+          date={data.date}
+          allStages={ALL_STAGES}
+          visibleStages={visibleStages}
+          onToggleStage={toggleStage}
+        />
       </div>
 
       <div
         className="grid bg-[#262626] min-h-[36px] px-[20px]"
-        style={{ gridTemplateColumns: `repeat(${PRESENTATION_STAGES.length}, 1fr)` }}
+        style={{ gridTemplateColumns: `repeat(${visibleStages.length}, 1fr)` }}
       >
-        {PRESENTATION_STAGES.map((stageName, idx) => (
+        {visibleStages.map((stageName, idx) => (
           <div
             key={stageName}
             className={[
@@ -48,9 +67,9 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
 
       <div
         className="grid flex-1 min-h-0 overflow-y-auto px-[20px]"
-        style={{ gridTemplateColumns: `repeat(${PRESENTATION_STAGES.length}, 1fr)` }}
+        style={{ gridTemplateColumns: `repeat(${visibleStages.length}, 1fr)` }}
       >
-        {PRESENTATION_STAGES.map((stageName, idx) => (
+        {visibleStages.map((stageName, idx) => (
           <div
             key={stageName}
             className={[

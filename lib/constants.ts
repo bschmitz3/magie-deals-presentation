@@ -1,22 +1,22 @@
 export const PRESENTATION_STAGES = [
   "Lead",
   "First Outreach",
-  "Call Scheduled",
+  "Intro Call Scheduled",
   "Qualifying",
   "Later FUP",
   "No Response / Stale",
   "Client Internal Review",
   "Scope Definition",
-  "Contract Negotiation",
   "Proposal Sent",
-  "Closed Won",
   "Pilot Validation",
+  "Contract Negotiation",
+  "Closed Won",
 ] as const;
 
 export const STAGE_MAPPING: Record<string, string> = {
   "Lead": "Lead",
   "First Outreach": "First Outreach",
-  "Intro Call Scheduled": "Call Scheduled",
+  "Intro Call Scheduled": "Intro Call Scheduled",
   "Qualifying": "Qualifying",
   "Later FUP": "Later FUP",
   "No Response / Stale": "No Response / Stale",
