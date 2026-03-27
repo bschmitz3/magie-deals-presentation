@@ -25,36 +25,36 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
 
   return (
     <div className="w-[100vw] h-[100vh] overflow-hidden bg-[#141414] flex flex-col">
-      <div className="mb-[24px]">
-        <Header date={data.date} scores={data.scores} />
+      <div className="mb-[8px]">
+        <Header date={data.date} />
       </div>
 
-      <div className="flex bg-[#262626] h-[40px]">
-        {PRESENTATION_STAGES.map((stageName, idx) => {
-          const label =
-            stageName.length > 18
-              ? stageName.split(" ").slice(1).join(" ")
-              : stageName;
-          return (
-            <div
-              key={stageName}
-              className={[
-                "flex-1 flex items-center justify-center text-[11px] font-bold uppercase text-[#FFFFFF] tracking-[1px] text-center px-[4px]",
-                idx === 0 ? "" : "border-l border-[#2E2E2E]",
-              ].join(" ")}
-            >
-              {label}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-1">
+      <div
+        className="grid bg-[#262626] min-h-[36px] px-[20px]"
+        style={{ gridTemplateColumns: `repeat(${PRESENTATION_STAGES.length}, 1fr)` }}
+      >
         {PRESENTATION_STAGES.map((stageName, idx) => (
           <div
             key={stageName}
             className={[
-              "flex-1 overflow-hidden",
+              "flex items-center justify-center text-[10px] font-bold uppercase text-[#FFFFFF] tracking-[0.5px] text-center px-[2px] py-[6px] leading-tight",
+              idx === 0 ? "" : "border-l border-[#2E2E2E]",
+            ].join(" ")}
+          >
+            {stageName}
+          </div>
+        ))}
+      </div>
+
+      <div
+        className="grid flex-1 min-h-0 overflow-y-auto px-[20px]"
+        style={{ gridTemplateColumns: `repeat(${PRESENTATION_STAGES.length}, 1fr)` }}
+      >
+        {PRESENTATION_STAGES.map((stageName, idx) => (
+          <div
+            key={stageName}
+            className={[
+              "overflow-hidden",
               idx === 0 ? "" : "border-l border-[#2E2E2E]",
             ].join(" ")}
           >

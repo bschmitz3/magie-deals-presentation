@@ -13,16 +13,15 @@ export default function DealColumn({
   onDealClick: (deal: Deal) => void;
 }) {
   return (
-    <div className="h-full">
-      <div
-        className="grid gap-[8px] pt-[16px] px-[8px]"
-        style={{
-          gridTemplateColumns: "repeat(3, 64px)",
-          width: "fit-content",
-          margin: "0 auto",
-        }}
-        aria-label={`${stageName} deals`}
-      >
+    <div
+      className="h-full overflow-y-auto px-[8px] pt-[8px]"
+      style={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "#333333 transparent",
+      }}
+      aria-label={`${stageName} deals`}
+    >
+      <div className="flex flex-col gap-[3px]">
         {deals.map((deal) => (
           <DealCard key={deal.recordId} deal={deal} onClick={onDealClick} />
         ))}

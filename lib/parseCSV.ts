@@ -76,14 +76,22 @@ export function parseCSV(csvText: string, presentationDate: string): Presentatio
     });
   }
 
-  const customers = deals.filter((d) => d.type === "Customer").length;
-  const channels = deals.length - customers;
+  const seen = new Set<string>();
+  const deduped = deals.filter((d) => {
+    const key = d.dealName.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const customers = deduped.filter((d) => d.type === "Customer").length;
+  const channels = deduped.length - customers;
 
   return {
     date: presentationDate,
-    deals,
+    deals: deduped,
     scores: {
-      totalDeals: deals.length,
+      totalDeals: deduped.length,
       customers,
       channels,
     },

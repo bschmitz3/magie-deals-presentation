@@ -65,6 +65,7 @@ export const AVAILABLE_LOGOS: string[] = [
   "porto_seguro",
   "primo_rico",
   "qi_tech",
+  "raio_beneficios",
   "rica_alimentos",
   "rodobens",
   "santander",
@@ -117,6 +118,8 @@ export const LOGO_OVERRIDE_MAP: Record<string, string> = {
   "CondoConta": "condoconta",
   "Itaú": "itau",
   "Stark Bank/Infra": "stark_bank",
+  "Raiô Benfícios": "raio_beneficios",
+  "Raiô Benefícios": "raio_beneficios",
 };
 
 function hashStringToUint32(input: string): number {

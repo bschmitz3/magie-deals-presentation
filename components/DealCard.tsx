@@ -47,34 +47,40 @@ export default function DealCard({
       tabIndex={0}
       onKeyDown={onKeyDown}
       onClick={() => onClick(deal)}
-      className="w-[64px] h-[64px] rounded-[10px] overflow-hidden cursor-pointer select-none transition-all duration-150 ease-in-out hover:scale-[1.08] hover:shadow-[0_0_0_2px_#4ADE80]"
+      className="w-full flex items-center gap-[6px] px-[5px] py-[5px] rounded-[8px] cursor-pointer select-none transition-colors duration-150 ease-in-out hover:bg-[#262626]"
     >
-      {fallbackStage === "avatar" ? (
-        <div
-          className="w-full h-full flex items-center justify-center text-[22px] font-bold text-[#FFFFFF]"
-          style={{ backgroundColor: tileBg }}
-        >
-          {initials}
-        </div>
-      ) : imgSrc ? (
-        <img
-          src={imgSrc}
-          alt={deal.dealName}
-          className="w-full h-full object-cover"
-          onError={() => {
-            const url = imgSrc ?? "";
-            console.log(`[LOGO FAIL] ${url} for "${deal.dealName}"`);
-            handleError();
-          }}
-        />
-      ) : (
-        <div
-          className="w-full h-full flex items-center justify-center text-[22px] font-bold text-[#FFFFFF]"
-          style={{ backgroundColor: tileBg }}
-        >
-          {initials}
-        </div>
-      )}
+      <div className="w-[28px] h-[28px] rounded-[6px] overflow-hidden flex-shrink-0">
+        {fallbackStage === "avatar" ? (
+          <div
+            className="w-full h-full flex items-center justify-center text-[12px] font-bold text-[#FFFFFF]"
+            style={{ backgroundColor: tileBg }}
+          >
+            {initials}
+          </div>
+        ) : imgSrc ? (
+          <img
+            src={imgSrc}
+            alt={deal.dealName}
+            className="w-full h-full object-cover"
+            onError={() => {
+              const url = imgSrc ?? "";
+              console.log(`[LOGO FAIL] ${url} for "${deal.dealName}"`);
+              handleError();
+            }}
+          />
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center text-[12px] font-bold text-[#FFFFFF]"
+            style={{ backgroundColor: tileBg }}
+          >
+            {initials}
+          </div>
+        )}
+      </div>
+
+      <span className="text-[11px] font-medium text-[#FFFFFF] truncate">
+        {deal.dealName}
+      </span>
     </div>
   );
 }
