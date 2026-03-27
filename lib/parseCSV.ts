@@ -58,11 +58,14 @@ export function parseCSV(csvText: string, presentationDate: string): Presentatio
     // Filter out deals whose stage isn't part of the 7 presentation columns.
     if (!mappedStage) continue;
 
-    const csvCategory = getCsvField(row, "Category").trim();
+    let csvCategory = getCsvField(row, "Category").trim();
+    if (csvCategory.toLowerCase() === "midmarket") {
+      csvCategory = "Startup // Midmarket";
+    }
     const category =
       csvCategory ||
       DEAL_CATEGORY_MOCK[dealName.toLowerCase()] ||
-      "Startups + Midmarket";
+      "Startup // Midmarket";
 
     const seed = hashStringToUint32(dealName);
     const type = seed % 100 < 70 ? ("Customer" as const) : ("Channel" as const);
