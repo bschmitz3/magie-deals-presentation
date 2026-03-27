@@ -15,9 +15,9 @@ export default function DealColumn({
   return (
     <div className="h-full">
       <div
-        className="grid gap-[7px] pt-[16px] px-[6px]"
+        className="grid gap-[8px] pt-[16px] px-[8px]"
         style={{
-          gridTemplateColumns: "repeat(3, 52px)",
+          gridTemplateColumns: "repeat(3, 64px)",
           width: "fit-content",
           margin: "0 auto",
         }}

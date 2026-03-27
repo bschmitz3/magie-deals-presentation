@@ -47,11 +47,11 @@ export default function DealCard({
       tabIndex={0}
       onKeyDown={onKeyDown}
       onClick={() => onClick(deal)}
-      className="w-[52px] h-[52px] rounded-[9px] overflow-hidden cursor-pointer select-none transition-all duration-150 ease-in-out hover:scale-[1.08] hover:shadow-[0_0_0_2px_#4ADE80]"
+      className="w-[64px] h-[64px] rounded-[10px] overflow-hidden cursor-pointer select-none transition-all duration-150 ease-in-out hover:scale-[1.08] hover:shadow-[0_0_0_2px_#4ADE80]"
     >
       {fallbackStage === "avatar" ? (
         <div
-          className="w-full h-full flex items-center justify-center text-[18px] font-bold text-[#FFFFFF]"
+          className="w-full h-full flex items-center justify-center text-[22px] font-bold text-[#FFFFFF]"
           style={{ backgroundColor: tileBg }}
         >
           {initials}
@@ -69,7 +69,7 @@ export default function DealCard({
         />
       ) : (
         <div
-          className="w-full h-full flex items-center justify-center text-[18px] font-bold text-[#FFFFFF]"
+          className="w-full h-full flex items-center justify-center text-[22px] font-bold text-[#FFFFFF]"
           style={{ backgroundColor: tileBg }}
         >
           {initials}
