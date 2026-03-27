@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 
 import type { Deal, PresentationData } from "./types";
-import { CATEGORIES, STAGE_MAPPING } from "./constants";
+import { DEAL_CATEGORY_MOCK, STAGE_MAPPING } from "./constants";
 
 function hashStringToUint32(input: string): number {
   // FNV-1a 32-bit
@@ -58,8 +58,13 @@ export function parseCSV(csvText: string, presentationDate: string): Presentatio
     // Filter out deals whose stage isn't part of the 7 presentation columns.
     if (!mappedStage) continue;
 
+    const csvCategory = getCsvField(row, "Category").trim();
+    const category =
+      csvCategory ||
+      DEAL_CATEGORY_MOCK[dealName.toLowerCase()] ||
+      "Startups + Midmarket";
+
     const seed = hashStringToUint32(dealName);
-    const category = CATEGORIES[seed % CATEGORIES.length];
     const type = seed % 100 < 70 ? ("Customer" as const) : ("Channel" as const);
 
     deals.push({

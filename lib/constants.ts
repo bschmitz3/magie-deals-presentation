@@ -3,14 +3,14 @@ export const PRESENTATION_STAGES = [
   "First Outreach",
   "Intro Call Scheduled",
   "Qualifying",
-  "Later FUP",
-  "No Response / Stale",
   "Client Internal Review",
   "Scope Definition",
   "Proposal Sent",
   "Pilot Validation",
   "Contract Negotiation",
   "Closed Won",
+  "Later FUP",
+  "No Response / Stale",
 ] as const;
 
 export const STAGE_MAPPING: Record<string, string> = {
@@ -103,6 +103,108 @@ export const DOMAIN_MAP: Record<string, string> = {
   "Cielo": "cielo.com.br",
   "C6 Bank": "c6bank.com.br",
 };
+
+export const CATEGORY_OPTIONS = ["Enterprise", "Startups + Midmarket", "Channels"] as const;
+
+const buildCategoryMock = (
+  entries: [string, string][],
+): Record<string, string> => {
+  const map: Record<string, string> = {};
+  for (const [name, cat] of entries) map[name.toLowerCase()] = cat;
+  return map;
+};
+
+export const DEAL_CATEGORY_MOCK: Record<string, string> = buildCategoryMock([
+  // Enterprise
+  ["Itaú", "Enterprise"],
+  ["Bradesco", "Enterprise"],
+  ["Santander", "Enterprise"],
+  ["Banco do Brasil", "Enterprise"],
+  ["Banco BV", "Enterprise"],
+  ["Banco Pan", "Enterprise"],
+  ["Banco Inter", "Enterprise"],
+  ["Banco BS2", "Enterprise"],
+  ["Banco Pine", "Enterprise"],
+  ["Banco XP", "Enterprise"],
+  ["Banco Daycoval", "Enterprise"],
+  ["Banco Original", "Enterprise"],
+  ["Banco Safra", "Enterprise"],
+  ["Porto Seguro", "Enterprise"],
+  ["Magalu", "Enterprise"],
+  ["Vivo", "Enterprise"],
+  ["Natura / Emana Pay", "Enterprise"],
+  ["ifood", "Enterprise"],
+  ["Stone", "Enterprise"],
+  ["Serasa", "Enterprise"],
+  ["PicPay", "Enterprise"],
+  ["PagBank", "Enterprise"],
+  ["C6 Bank", "Enterprise"],
+  ["Agibank", "Enterprise"],
+  ["BMG", "Enterprise"],
+  ["Banrisul", "Enterprise"],
+  ["BBVA", "Enterprise"],
+  ["Ipiranga", "Enterprise"],
+  ["Neon", "Enterprise"],
+
+  // Startups + Midmarket
+  ["Caveo", "Startups + Midmarket"],
+  ["Capim", "Startups + Midmarket"],
+  ["Cloudwalk", "Startups + Midmarket"],
+  ["Conta Azul", "Startups + Midmarket"],
+  ["Conta Simples", "Startups + Midmarket"],
+  ["Contabilizei", "Startups + Midmarket"],
+  ["Cora", "Startups + Midmarket"],
+  ["Nomad", "Startups + Midmarket"],
+  ["Onfly", "Startups + Midmarket"],
+  ["TerraMagna", "Startups + Midmarket"],
+  ["Binance", "Startups + Midmarket"],
+  ["MercadoBitcoin (MB)", "Startups + Midmarket"],
+  ["Avenue", "Startups + Midmarket"],
+  ["Estrela Bet", "Startups + Midmarket"],
+  ["QI Tech", "Startups + Midmarket"],
+  ["Grão Direto", "Startups + Midmarket"],
+  ["Rica Alimentos", "Startups + Midmarket"],
+  ["Plin Energia", "Startups + Midmarket"],
+  ["CondoConta", "Startups + Midmarket"],
+  ["Astropay", "Startups + Midmarket"],
+  ["bull", "Startups + Midmarket"],
+  ["izi", "Startups + Midmarket"],
+  ["180 Seguros", "Startups + Midmarket"],
+  ["pagaleve", "Startups + Midmarket"],
+  ["Asaas", "Startups + Midmarket"],
+  ["Facio", "Startups + Midmarket"],
+  ["Fidexa", "Startups + Midmarket"],
+  ["MercadoPago", "Startups + Midmarket"],
+  ["DuoGourmet", "Startups + Midmarket"],
+  ["Hotmart", "Startups + Midmarket"],
+  ["MidWay", "Startups + Midmarket"],
+  ["RecargaPay", "Startups + Midmarket"],
+  ["Techne", "Startups + Midmarket"],
+  ["Stark Bank/Infra", "Startups + Midmarket"],
+  ["Raiô Benfícios", "Startups + Midmarket"],
+  ["Real Bem", "Startups + Midmarket"],
+  ["Remessa Online", "Startups + Midmarket"],
+  ["Ume", "Startups + Midmarket"],
+  ["Zro Bank", "Startups + Midmarket"],
+  ["Celcoin", "Startups + Midmarket"],
+  ["Cooperforte", "Startups + Midmarket"],
+
+  // Channels
+  ["Adaflow", "Channels"],
+  ["Blip", "Channels"],
+  ["nstech", "Channels"],
+  ["Swap", "Channels"],
+  ["PlugZ (Semenzato)", "Channels"],
+  ["Oxpay", "Channels"],
+  ["Passabot", "Channels"],
+  ["Gupshup", "Channels"],
+  ["UY3 (BaaS)", "Channels"],
+  ["Rodobank", "Channels"],
+  ["Interbank (Peru)", "Channels"],
+  ["Grupo Primo (primo rico)", "Channels"],
+  ["Vigicred", "Channels"],
+  ["Bemobi / Paytime", "Channels"],
+]);
 
 export const AVATAR_COLORS = [
   "#6366F1", // indigo

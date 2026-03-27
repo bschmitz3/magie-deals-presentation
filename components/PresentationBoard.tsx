@@ -13,6 +13,7 @@ const ALL_STAGES = [...PRESENTATION_STAGES];
 export default function PresentationBoard({ data }: { data: PresentationData }) {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [visibleStages, setVisibleStages] = useState<string[]>([...ALL_STAGES]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const toggleStage = useCallback((stage: string) => {
     setVisibleStages((prev) => {
@@ -30,12 +31,13 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
     for (const stage of PRESENTATION_STAGES) map.set(stage, []);
 
     for (const deal of data.deals) {
+      if (selectedCategory && deal.category !== selectedCategory) continue;
       const list = map.get(deal.dealStage);
       if (list) list.push(deal);
     }
 
     return map;
-  }, [data.deals]);
+  }, [data.deals, selectedCategory]);
 
   return (
     <div className="w-[100vw] h-[100vh] overflow-hidden bg-[#141414] flex flex-col">
@@ -45,6 +47,8 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
           allStages={ALL_STAGES}
           visibleStages={visibleStages}
           onToggleStage={toggleStage}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
         />
       </div>
 
