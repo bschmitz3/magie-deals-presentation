@@ -66,22 +66,22 @@ export default function Header({
   const title = TITLE_MAP[activeKey] ?? "ALL DEALS";
 
   return (
-    <div className="flex items-center justify-between px-[20px] pt-[16px]">
-      <div className="flex items-center gap-[12px]">
+    <div className="flex items-center justify-between px-[20px] pt-[12px]">
+      <div className="flex items-center gap-[10px]">
         <Image
           src="/images/logo_magie_glass.png"
           alt="magie"
-          width={48}
-          height={48}
-          className="rounded-[12px]"
+          width={36}
+          height={36}
+          className="rounded-[10px]"
           priority
         />
 
         <div className="flex flex-col justify-center">
-          <div className="text-[48px] font-black leading-[1] tracking-[-2px] uppercase text-[#FFFFFF]">
+          <div className="text-[32px] font-black leading-[1] tracking-[-1.5px] uppercase text-[#FFFFFF]">
             {title}
           </div>
-          <div className="mt-[4px] text-[12px] font-medium uppercase tracking-[1px] text-[#999999]">
+          <div className="mt-[2px] text-[11px] font-medium uppercase tracking-[1px] text-[#999999]">
             ALL HANDS • {date}
           </div>
         </div>
