@@ -39,6 +39,12 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
     return map;
   }, [data.deals, selectedCategory]);
 
+  const filteredVisibleStages = useMemo(() => {
+    return visibleStages.filter(
+      (stage) => (dealsByStage.get(stage)?.length ?? 0) > 0,
+    );
+  }, [visibleStages, dealsByStage]);
+
   return (
     <div className="w-[100vw] h-[100vh] overflow-hidden bg-[#141414] flex flex-col">
       <div className="mb-[8px]">
@@ -54,9 +60,9 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
 
       <div
         className="grid bg-[#262626] min-h-[36px] px-[20px]"
-        style={{ gridTemplateColumns: `repeat(${visibleStages.length}, 1fr)` }}
+        style={{ gridTemplateColumns: `repeat(${filteredVisibleStages.length}, 1fr)` }}
       >
-        {visibleStages.map((stageName, idx) => (
+        {filteredVisibleStages.map((stageName, idx) => (
           <div
             key={stageName}
             className={[
@@ -71,9 +77,9 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
 
       <div
         className="grid flex-1 min-h-0 overflow-y-auto px-[20px]"
-        style={{ gridTemplateColumns: `repeat(${visibleStages.length}, 1fr)` }}
+        style={{ gridTemplateColumns: `repeat(${filteredVisibleStages.length}, 1fr)` }}
       >
-        {visibleStages.map((stageName, idx) => (
+        {filteredVisibleStages.map((stageName, idx) => (
           <div
             key={stageName}
             className={[

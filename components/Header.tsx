@@ -3,7 +3,19 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-import { CATEGORY_OPTIONS } from "@/lib/constants";
+const CATEGORY_CHIPS = [
+  { key: "Enterprise", label: "Enterprise", activeBg: "#9333EA", activeBorder: "#9333EA", activeColor: "#FFFFFF" },
+  { key: "Startup // Midmarket", label: "Startup // Midmarket", activeBg: "#2563EB", activeBorder: "#2563EB", activeColor: "#FFFFFF" },
+  { key: "Channels", label: "Channels", activeBg: "#16A34A", activeBorder: "#16A34A", activeColor: "#FFFFFF" },
+  { key: "All", label: "All", activeBg: "#FFFFFF", activeBorder: "#FFFFFF", activeColor: "#111111" },
+] as const;
+
+const TITLE_MAP: Record<string, string> = {
+  Enterprise: "ENTERPRISE DEALS",
+  "Startup // Midmarket": "MIDMARKET DEALS",
+  Channels: "CHANNELS DEALS",
+  All: "ALL DEALS",
+};
 
 export default function Header({
   date,
@@ -21,24 +33,19 @@ export default function Header({
   onSelectCategory: (cat: string | null) => void;
 }) {
   const [stageOpen, setStageOpen] = useState(false);
-  const [catOpen, setCatOpen] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
-  const catRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (stageRef.current && !stageRef.current.contains(e.target as Node)) {
         setStageOpen(false);
       }
-      if (catRef.current && !catRef.current.contains(e.target as Node)) {
-        setCatOpen(false);
-      }
     }
-    if (stageOpen || catOpen) {
+    if (stageOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [stageOpen, catOpen]);
+  }, [stageOpen]);
 
   const visibleSet = new Set(visibleStages);
 
@@ -55,7 +62,8 @@ export default function Header({
     }
   }
 
-  const categoryLabel = selectedCategory ?? "All Categories";
+  const activeKey = selectedCategory ?? "All";
+  const title = TITLE_MAP[activeKey] ?? "ALL DEALS";
 
   return (
     <div className="flex items-center justify-between px-[20px] pt-[16px]">
@@ -71,7 +79,7 @@ export default function Header({
 
         <div className="flex flex-col justify-center">
           <div className="text-[48px] font-black leading-[1] tracking-[-2px] uppercase text-[#FFFFFF]">
-            DEALS
+            {title}
           </div>
           <div className="mt-[4px] text-[12px] font-medium uppercase tracking-[1px] text-[#999999]">
             ALL HANDS • {date}
@@ -80,72 +88,45 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-[8px]">
-        {/* Category filter */}
-        <div ref={catRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setCatOpen((v) => !v)}
-            className="flex items-center gap-[6px] h-[40px] bg-[#1E1E1E] border border-[#3A3A3A] rounded-[10px] px-[14px] py-[8px] cursor-pointer transition-colors duration-150 hover:bg-[#262626]"
-          >
-            <span className="text-[12px] font-medium text-[#FFFFFF] whitespace-nowrap">
-              {categoryLabel}
-            </span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              className={`transition-transform duration-150 ${catOpen ? "rotate-180" : ""}`}
-            >
-              <path d="M3 4.5L6 7.5L9 4.5" stroke="#999999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-
-          <div
-            className={[
-              "absolute top-[48px] right-0 z-[40] w-[220px] bg-[#1C1C1C] border border-[#3A3A3A] rounded-[12px] p-[8px] transition-all duration-150 origin-top-right",
-              catOpen
-                ? "opacity-100 scale-100 pointer-events-auto"
-                : "opacity-0 scale-95 pointer-events-none",
-            ].join(" ")}
-            style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
-          >
+        {/* Category chips */}
+        {CATEGORY_CHIPS.map((chip) => {
+          const isActive = activeKey === chip.key;
+          return (
             <button
+              key={chip.key}
               type="button"
-              onClick={() => { onSelectCategory(null); setCatOpen(false); }}
-              className={[
-                "flex items-center gap-[8px] w-full px-[12px] py-[8px] rounded-[6px] cursor-pointer transition-colors duration-150 hover:bg-[#262626]",
-                selectedCategory === null ? "bg-[#262626]" : "",
-              ].join(" ")}
+              onClick={() =>
+                onSelectCategory(chip.key === "All" ? null : chip.key)
+              }
+              className="cursor-pointer transition-all duration-150"
+              style={{
+                padding: "8px 20px",
+                borderRadius: "20px",
+                fontSize: "13px",
+                fontWeight: 500,
+                lineHeight: "1",
+                whiteSpace: "nowrap",
+                background: isActive ? chip.activeBg : "transparent",
+                border: `1px solid ${isActive ? chip.activeBorder : "#3A3A3A"}`,
+                color: isActive ? chip.activeColor : "#999999",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = "#666666";
+                  e.currentTarget.style.color = "#FFFFFF";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = "#3A3A3A";
+                  e.currentTarget.style.color = "#999999";
+                }
+              }}
             >
-              {selectedCategory === null && (
-                <span className="w-[6px] h-[6px] rounded-full bg-[#4ADE80] flex-shrink-0" />
-              )}
-              <span className={`text-[12px] text-[#FFFFFF] ${selectedCategory === null ? "font-bold" : "font-medium"}`}>
-                All Categories
-              </span>
+              {chip.label}
             </button>
-
-            {CATEGORY_OPTIONS.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => { onSelectCategory(cat); setCatOpen(false); }}
-                className={[
-                  "flex items-center gap-[8px] w-full px-[12px] py-[8px] rounded-[6px] cursor-pointer transition-colors duration-150 hover:bg-[#262626]",
-                  selectedCategory === cat ? "bg-[#262626]" : "",
-                ].join(" ")}
-              >
-                {selectedCategory === cat && (
-                  <span className="w-[6px] h-[6px] rounded-full bg-[#4ADE80] flex-shrink-0" />
-                )}
-                <span className={`text-[12px] text-[#FFFFFF] ${selectedCategory === cat ? "font-bold" : "font-medium"}`}>
-                  {cat}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+          );
+        })}
 
         {/* Stage filter */}
         <div ref={stageRef} className="relative">
