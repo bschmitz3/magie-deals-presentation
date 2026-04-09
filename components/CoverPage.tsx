@@ -9,36 +9,33 @@ import type { PresentationData } from "@/lib/types";
 
 const STORAGE_KEY = "magieDealsPresentationData";
 
+function todayDdMmYyyy(): string {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
+}
+
 export default function CoverPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [presentationDateISO, setPresentationDateISO] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const presentationDate = useMemo(() => {
-    // Input type="date" gives YYYY-MM-DD; we convert to dd/mm/yyyy for the app model.
-    if (!presentationDateISO) return "";
-    const parts = presentationDateISO.split("-");
-    if (parts.length !== 3) return "";
-    const [yyyy, mm, dd] = parts;
-    return `${dd}/${mm}/${yyyy}`;
-  }, [presentationDateISO]);
-
   const canStart = useMemo(() => {
-    return presentationDate.trim().length > 0 && Boolean(selectedFile) && !isSubmitting;
-  }, [presentationDate, selectedFile, isSubmitting]);
+    return Boolean(selectedFile) && !isSubmitting;
+  }, [selectedFile, isSubmitting]);
 
   async function handleLetsGo() {
     if (!selectedFile) return;
-    if (!presentationDate.trim()) return;
 
     try {
       setIsSubmitting(true);
       const csvText = await selectedFile.text();
-      const data: PresentationData = parseCSV(csvText, presentationDate.trim());
+      const data: PresentationData = parseCSV(csvText, todayDdMmYyyy());
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       router.push("/presentation");
@@ -78,18 +75,6 @@ export default function CoverPage() {
           </h1>
 
           <div className="mt-[32px]">
-            <label className="block text-[13px] font-medium text-[#999999]">
-              Presentation date
-            </label>
-            <input
-              type="date"
-              value={presentationDateISO}
-              onChange={(e) => setPresentationDateISO(e.target.value)}
-              className="mt-[8px] h-[44px] w-full rounded-[8px] bg-[#FFFFFF] border border-[#DADADA] px-[14px] text-[14px] text-[#111111] outline-none focus-visible:ring-2 focus-visible:ring-green-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414]"
-            />
-          </div>
-
-          <div className="mt-[16px]">
             <button
               type="button"
               onClick={openFilePicker}

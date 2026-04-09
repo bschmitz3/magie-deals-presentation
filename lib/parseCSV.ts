@@ -32,6 +32,27 @@ function buildStageMappingLowercase(): Record<string, string> {
   return map;
 }
 
+const CATEGORY_NORMALIZATION: Record<string, string> = {
+  enterprise: "Enterprise",
+  "startup / middle": "Startup // Midmarket",
+  "startup // midmarket": "Startup // Midmarket",
+  midmarket: "Startup // Midmarket",
+  channel: "Channels",
+  channels: "Channels",
+};
+
+function normalizeCategory(raw: string, dealName: string): string {
+  const trimmed = raw.trim();
+  if (trimmed) {
+    const mapped = CATEGORY_NORMALIZATION[trimmed.toLowerCase()];
+    if (mapped) return mapped;
+    return trimmed;
+  }
+  return (
+    DEAL_CATEGORY_MOCK[dealName.toLowerCase()] || "Startup // Midmarket"
+  );
+}
+
 export function parseCSV(csvText: string, presentationDate: string): PresentationData {
   const stageMappingLower = buildStageMappingLowercase();
 
@@ -58,14 +79,10 @@ export function parseCSV(csvText: string, presentationDate: string): Presentatio
     // Filter out deals whose stage isn't part of the 7 presentation columns.
     if (!mappedStage) continue;
 
-    let csvCategory = getCsvField(row, "Category").trim();
-    if (csvCategory.toLowerCase() === "midmarket") {
-      csvCategory = "Startup // Midmarket";
-    }
-    const category =
-      csvCategory ||
-      DEAL_CATEGORY_MOCK[dealName.toLowerCase()] ||
-      "Startup // Midmarket";
+    const category = normalizeCategory(
+      getCsvField(row, "Industry size-type") || getCsvField(row, "Category"),
+      dealName,
+    );
 
     const seed = hashStringToUint32(dealName);
     const type = seed % 100 < 70 ? ("Customer" as const) : ("Channel" as const);
