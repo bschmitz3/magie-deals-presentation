@@ -1,31 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { parseCSV } from "@/lib/parseCSV";
 import type { PresentationData } from "@/lib/types";
 
 const STORAGE_KEY = "magieDealsPresentationData";
 
-function todayDdMmYyyy(): string {
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2, "0");
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const yyyy = now.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
-}
-
 export default function CoverPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleHubSpotSync() {
+  async function handleLetsGo() {
     try {
       setIsSyncing(true);
       setError(null);
@@ -48,32 +37,6 @@ export default function CoverPage() {
     }
   }
 
-  function openFilePicker() {
-    fileInputRef.current?.click();
-  }
-
-  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    if (!file) return;
-
-    try {
-      setIsParsing(true);
-      setError(null);
-
-      const csvText = await file.text();
-      const data: PresentationData = parseCSV(csvText, todayDdMmYyyy());
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      router.push("/presentation");
-    } catch (err) {
-      console.error("CSV parsing failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to parse CSV");
-      setIsParsing(false);
-    }
-  }
-
-  const isLoading = isSyncing || isParsing;
-
   return (
     <div className="min-h-[100vh] bg-[#141414] flex items-center justify-center">
       <div className="max-w-[960px] w-full px-[64px] py-[56px] bg-[#1C1C1C] rounded-[24px] flex gap-[40px]">
@@ -93,13 +56,12 @@ export default function CoverPage() {
             B2B Deal Presentation
           </h1>
 
-          <div className="mt-[32px] flex flex-col gap-[12px]">
-            {/* HubSpot Sync Button */}
+          <div className="mt-[32px]">
             <button
               type="button"
-              onClick={handleHubSpotSync}
-              disabled={isLoading}
-              className="h-[44px] w-full rounded-[24px] bg-[#FF7A59] hover:bg-[#e86c4e] text-[14px] font-semibold text-[#FFFFFF] flex items-center justify-center gap-[8px] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={handleLetsGo}
+              disabled={isSyncing}
+              className="h-[44px] w-full rounded-[24px] bg-[#4ADE80] hover:bg-[#3ECF71] text-[14px] font-semibold text-[#FFFFFF] flex items-center justify-center gap-[8px] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSyncing ? (
                 <>
@@ -138,71 +100,10 @@ export default function CoverPage() {
                       fill="currentColor"
                     />
                   </svg>
-                  <span>Sync from HubSpot</span>
+                  <span>Let&apos;s go!</span>
                 </>
               )}
             </button>
-
-            {/* "or" divider */}
-            <div className="flex items-center gap-[12px]">
-              <div className="flex-1 h-px bg-[#3A3A3A]" />
-              <span className="text-[12px] text-[#666666] select-none">
-                or
-              </span>
-              <div className="flex-1 h-px bg-[#3A3A3A]" />
-            </div>
-
-            {/* CSV Upload Button (fallback) */}
-            <button
-              type="button"
-              onClick={openFilePicker}
-              disabled={isLoading}
-              className="h-[44px] w-full rounded-[24px] bg-[#4ADE80] hover:bg-[#3ECF71] text-[14px] font-semibold text-[#FFFFFF] flex items-center justify-center gap-[8px] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isParsing ? (
-                <>
-                  <svg
-                    className="animate-spin h-[16px] w-[16px]"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <Image
-                    src="/icons/upload.svg"
-                    alt=""
-                    aria-hidden="true"
-                    width={16}
-                    height={16}
-                  />
-                  <span>Upload Hubspot Deals file</span>
-                </>
-              )}
-            </button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={onFileSelected}
-              className="hidden"
-            />
           </div>
 
           {error && (
