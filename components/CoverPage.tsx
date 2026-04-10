@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { parseCSV } from "@/lib/parseCSV";
@@ -21,27 +21,30 @@ export default function CoverPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const canStart = useMemo(() => {
-    return Boolean(selectedFile) && !isSubmitting;
-  }, [selectedFile, isSubmitting]);
-
-  async function handleLetsGo() {
-    if (!selectedFile) return;
-
+  async function handleHubSpotSync() {
     try {
-      setIsSubmitting(true);
-      const csvText = await selectedFile.text();
-      const data: PresentationData = parseCSV(csvText, todayDdMmYyyy());
+      setIsSyncing(true);
+      setError(null);
 
+      const res = await fetch("/api/hubspot/deals");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(
+          body?.error ?? `Failed to sync from HubSpot (${res.status})`,
+        );
+      }
+
+      const data: PresentationData = await res.json();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       router.push("/presentation");
     } catch (err) {
-      console.error("Failed to start presentation:", err);
-      setIsSubmitting(false);
+      console.error("HubSpot sync failed:", err);
+      setError(err instanceof Error ? err.message : "Sync failed");
+      setIsSyncing(false);
     }
   }
 
@@ -49,11 +52,27 @@ export default function CoverPage() {
     fileInputRef.current?.click();
   }
 
-  function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
-    setSelectedFile(file);
-    setFileName(file ? file.name : "");
+    if (!file) return;
+
+    try {
+      setIsParsing(true);
+      setError(null);
+
+      const csvText = await file.text();
+      const data: PresentationData = parseCSV(csvText, todayDdMmYyyy());
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      router.push("/presentation");
+    } catch (err) {
+      console.error("CSV parsing failed:", err);
+      setError(err instanceof Error ? err.message : "Failed to parse CSV");
+      setIsParsing(false);
+    }
   }
+
+  const isLoading = isSyncing || isParsing;
 
   return (
     <div className="min-h-[100vh] bg-[#141414] flex items-center justify-center">
@@ -74,14 +93,107 @@ export default function CoverPage() {
             B2B Deal Presentation
           </h1>
 
-          <div className="mt-[32px]">
+          <div className="mt-[32px] flex flex-col gap-[12px]">
+            {/* HubSpot Sync Button */}
+            <button
+              type="button"
+              onClick={handleHubSpotSync}
+              disabled={isLoading}
+              className="h-[44px] w-full rounded-[24px] bg-[#FF7A59] hover:bg-[#e86c4e] text-[14px] font-semibold text-[#FFFFFF] flex items-center justify-center gap-[8px] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSyncing ? (
+                <>
+                  <svg
+                    className="animate-spin h-[16px] w-[16px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  <span>Syncing...</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8h2a6 6 0 0 1 10.24-4.24L10 6h6V0l-2.35 2.35zM14 8a6 6 0 0 1-10.24 4.24L6 10H0v6l2.35-2.35A7.96 7.96 0 0 0 8 16c4.42 0 8-3.58 8-8h-2z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span>Sync from HubSpot</span>
+                </>
+              )}
+            </button>
+
+            {/* "or" divider */}
+            <div className="flex items-center gap-[12px]">
+              <div className="flex-1 h-px bg-[#3A3A3A]" />
+              <span className="text-[12px] text-[#666666] select-none">
+                or
+              </span>
+              <div className="flex-1 h-px bg-[#3A3A3A]" />
+            </div>
+
+            {/* CSV Upload Button (fallback) */}
             <button
               type="button"
               onClick={openFilePicker}
-              className="h-[44px] w-full rounded-[24px] bg-[#4ADE80] hover:bg-[#3ECF71] text-[14px] font-semibold text-[#FFFFFF] flex items-center justify-center gap-[8px] transition-colors disabled:cursor-not-allowed"
+              disabled={isLoading}
+              className="h-[44px] w-full rounded-[24px] bg-[#4ADE80] hover:bg-[#3ECF71] text-[14px] font-semibold text-[#FFFFFF] flex items-center justify-center gap-[8px] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Image src="/icons/upload.svg" alt="" aria-hidden="true" width={16} height={16} />
-              <span>Upload Hubspot Deals file</span>
+              {isParsing ? (
+                <>
+                  <svg
+                    className="animate-spin h-[16px] w-[16px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <Image
+                    src="/icons/upload.svg"
+                    alt=""
+                    aria-hidden="true"
+                    width={16}
+                    height={16}
+                  />
+                  <span>Upload Hubspot Deals file</span>
+                </>
+              )}
             </button>
 
             <input
@@ -91,27 +203,13 @@ export default function CoverPage() {
               onChange={onFileSelected}
               className="hidden"
             />
-
-            {fileName ? (
-              <div className="mt-[8px] text-[12px] text-[#999999] text-center">{fileName}</div>
-            ) : null}
           </div>
 
-          <div className="my-[24px] h-px w-full bg-[#3A3A3A]" />
-
-          <button
-            type="button"
-            onClick={handleLetsGo}
-            disabled={!canStart}
-            className={[
-              "h-[44px] w-full rounded-[24px] text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414]",
-              canStart
-                ? "bg-[#4ADE80] text-[#FFFFFF] hover:bg-[#3ECF71]"
-                : "bg-[#3A3A3A] text-[#888888] cursor-not-allowed",
-            ].join(" ")}
-          >
-            Let&apos;s go!
-          </button>
+          {error && (
+            <div className="mt-[12px] text-[12px] text-[#EF4444] text-center">
+              {error}
+            </div>
+          )}
         </div>
 
         <div className="w-[45%] flex items-center justify-center">
