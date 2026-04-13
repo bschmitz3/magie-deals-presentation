@@ -7,6 +7,7 @@ import type { PresentationData } from "@/lib/types";
 import PresentationBoard from "@/components/PresentationBoard";
 
 const STORAGE_KEY = "magieDealsPresentationData";
+const AUTH_KEY = "magieDealsAuth";
 
 export default function PresentationPage() {
   const router = useRouter();
@@ -14,6 +15,11 @@ export default function PresentationPage() {
 
   useEffect(() => {
     try {
+      if (!localStorage.getItem(AUTH_KEY)) {
+        router.push("/");
+        return;
+      }
+
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
         router.push("/");
