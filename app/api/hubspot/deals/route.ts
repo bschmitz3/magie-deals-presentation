@@ -1,32 +1,12 @@
 import { NextResponse } from "next/server";
 
-import {
-  STAGE_MAPPING,
-  PRESENTATION_STAGES,
-  DEAL_CATEGORY_MOCK,
-} from "@/lib/constants";
+import { DEAL_CATEGORY_MOCK } from "@/lib/constants";
 import type { Deal, DealType, PresentationData } from "@/lib/types";
 
 const HUBSPOT_SEARCH_URL =
   "https://api.hubapi.com/crm/v3/objects/deals/search";
-
-const STAGE_ID_MAP: Record<string, string> = {
-  "1316011864": "Lead",
-  "1316011865": "First Outreach",
-  "1316011866": "Intro Call Scheduled",
-  "1319773732": "Qualifying",
-  "1316011868": "Client Internal Review",
-  "1322407809": "scope definition",
-  "1331736494": "Pilot Validation",
-  "1315985513": "Closed Won (Integration)",
-  "1316011869": "Proposal Sent",
-  "1316011870": "Contract Negotiation",
-  "1319166020": "Pilot started",
-  "1319162148": "Scaling",
-  "1315985514": "Closed Lost",
-  "1318245706": "No Response / Stale",
-  "1319650927": "Later FUP",
-};
+const HUBSPOT_PIPELINES_URL =
+  "https://api.hubapi.com/crm/v3/pipelines/deals";
 
 const OWNER_MAP: Record<string, string> = {
   "87637041": "Pedro Castro",
@@ -43,16 +23,91 @@ const CATEGORY_API_MAP: Record<string, string> = {
   Middle: "Channels",
 };
 
-const PRESENTATION_STAGES_SET = new Set(
-  PRESENTATION_STAGES.map((s) => s.toLowerCase()),
-);
+interface HubSpotPipelineStage {
+  id: string;
+  label: string;
+  displayOrder: number;
+}
 
-function buildStageMappingLowercase(): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const [raw, mapped] of Object.entries(STAGE_MAPPING)) {
-    map[raw.trim().toLowerCase()] = mapped;
+interface HubSpotPipeline {
+  id: string;
+  label: string;
+  displayOrder: number;
+  stages: HubSpotPipelineStage[];
+}
+
+interface HubSpotPipelinesResponse {
+  results: HubSpotPipeline[];
+}
+
+interface HubSpotDealProperties {
+  dealname?: string;
+  dealstage?: string;
+  closedate?: string;
+  hubspot_owner_id?: string;
+  amount?: string;
+  industry_sizetype?: string;
+  pipeline?: string;
+}
+
+interface HubSpotDeal {
+  id: string;
+  properties: HubSpotDealProperties;
+}
+
+interface HubSpotSearchResponse {
+  total: number;
+  results: HubSpotDeal[];
+  paging?: {
+    next?: {
+      after: string;
+    };
+  };
+}
+
+// Loaded once per cold start — pipeline stages rarely change.
+let pipelineCache: {
+  pipelineId: string;
+  stageIdToLabel: Map<string, string>;
+  orderedStageLabels: string[];
+} | null = null;
+
+async function fetchDefaultPipeline(token: string) {
+  if (pipelineCache) return pipelineCache;
+
+  const res = await fetch(HUBSPOT_PIPELINES_URL, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HubSpot pipelines API error ${res.status}: ${text}`);
   }
-  return map;
+
+  const data: HubSpotPipelinesResponse = await res.json();
+  if (!data.results || data.results.length === 0) {
+    throw new Error("No deal pipelines returned from HubSpot");
+  }
+
+  // Use the pipeline whose id is "default", falling back to the first one.
+  const pipeline =
+    data.results.find((p) => p.id === "default") ??
+    [...data.results].sort((a, b) => a.displayOrder - b.displayOrder)[0];
+
+  const stageIdToLabel = new Map<string, string>();
+  const sortedStages = [...pipeline.stages].sort(
+    (a, b) => a.displayOrder - b.displayOrder,
+  );
+  for (const stage of sortedStages) {
+    stageIdToLabel.set(stage.id, stage.label);
+  }
+
+  pipelineCache = {
+    pipelineId: pipeline.id,
+    stageIdToLabel,
+    orderedStageLabels: sortedStages.map((s) => s.label),
+  };
+  return pipelineCache;
 }
 
 function hashStringToUint32(input: string): number {
@@ -72,31 +127,10 @@ function todayDdMmYyyy(): string {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-interface HubSpotDealProperties {
-  dealname?: string;
-  dealstage?: string;
-  closedate?: string;
-  hubspot_owner_id?: string;
-  amount?: string;
-  industry_sizetype?: string;
-}
-
-interface HubSpotDeal {
-  id: string;
-  properties: HubSpotDealProperties;
-}
-
-interface HubSpotSearchResponse {
-  total: number;
-  results: HubSpotDeal[];
-  paging?: {
-    next?: {
-      after: string;
-    };
-  };
-}
-
-async function fetchAllDeals(token: string): Promise<HubSpotDeal[]> {
+async function fetchAllDeals(
+  token: string,
+  pipelineId: string,
+): Promise<HubSpotDeal[]> {
   const allDeals: HubSpotDeal[] = [];
   let after: string | undefined;
 
@@ -110,14 +144,15 @@ async function fetchAllDeals(token: string): Promise<HubSpotDeal[]> {
         "hubspot_owner_id",
         "amount",
         "industry_sizetype",
+        "pipeline",
       ],
       filterGroups: [
         {
           filters: [
             {
-              propertyName: "dealstage",
-              operator: "NEQ",
-              value: "1318245705",
+              propertyName: "pipeline",
+              operator: "EQ",
+              value: pipelineId,
             },
           ],
         },
@@ -179,8 +214,8 @@ export async function GET() {
   }
 
   try {
-    const hubspotDeals = await fetchAllDeals(token);
-    const stageMappingLower = buildStageMappingLowercase();
+    const pipeline = await fetchDefaultPipeline(token);
+    const hubspotDeals = await fetchAllDeals(token, pipeline.pipelineId);
 
     const deals: Deal[] = [];
 
@@ -190,17 +225,10 @@ export async function GET() {
       if (!dealName) continue;
 
       const stageId = props.dealstage ?? "";
-      const stageLabel = STAGE_ID_MAP[stageId];
+      const stageLabel = pipeline.stageIdToLabel.get(stageId);
+      // Skip deals whose stage isn't part of the resolved pipeline (defensive
+      // — shouldn't happen given the pipeline filter on the search request).
       if (!stageLabel) continue;
-
-      const presentationStage =
-        stageMappingLower[stageLabel.trim().toLowerCase()];
-      if (
-        !presentationStage ||
-        !PRESENTATION_STAGES_SET.has(presentationStage.toLowerCase())
-      ) {
-        continue;
-      }
 
       const ownerName = OWNER_MAP[props.hubspot_owner_id ?? ""] ?? "";
       const category = resolveCategory(props.industry_sizetype, dealName);
@@ -211,7 +239,7 @@ export async function GET() {
       deals.push({
         recordId: hsDeal.id,
         dealName,
-        dealStage: presentationStage,
+        dealStage: stageLabel,
         rawStage: stageLabel,
         closeDate: props.closedate ?? "",
         dealOwner: ownerName,
@@ -241,6 +269,7 @@ export async function GET() {
         customers,
         channels,
       },
+      stages: pipeline.orderedStageLabels,
     };
 
     return NextResponse.json(data);

@@ -1,33 +1,3 @@
-export const PRESENTATION_STAGES = [
-  "Lead",
-  "First Outreach",
-  "Intro Call Scheduled",
-  "Qualifying",
-  "Client Internal Review",
-  "Scope Definition",
-  "Proposal Sent",
-  "Pilot Validation",
-  "Contract Negotiation",
-  "Closed Won",
-  "Later FUP",
-  "No Response / Stale",
-] as const;
-
-export const STAGE_MAPPING: Record<string, string> = {
-  "Lead": "Lead",
-  "First Outreach": "First Outreach",
-  "Intro Call Scheduled": "Intro Call Scheduled",
-  "Qualifying": "Qualifying",
-  "Later FUP": "Later FUP",
-  "No Response / Stale": "No Response / Stale",
-  "Client Internal Review": "Client Internal Review",
-  "scope definition": "Scope Definition",
-  "Contract Negotiation": "Contract Negotiation",
-  "Proposal Sent": "Proposal Sent",
-  "Closed Won (Integration)": "Closed Won",
-  "Pilot Validation": "Pilot Validation",
-};
-
 export const CATEGORIES = [
   "Fintech",
   "Insurance",

@@ -23,4 +23,5 @@ export interface PresentationData {
   date: string;
   deals: Deal[];
   scores: Scores;
+  stages: string[];
 }

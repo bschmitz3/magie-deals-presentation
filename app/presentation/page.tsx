@@ -27,7 +27,14 @@ export default function PresentationPage() {
       }
 
       const parsed = JSON.parse(raw) as PresentationData;
-      if (!parsed || !Array.isArray(parsed.deals) || !parsed.scores) {
+      if (
+        !parsed ||
+        !Array.isArray(parsed.deals) ||
+        !parsed.scores ||
+        !Array.isArray(parsed.stages) ||
+        parsed.stages.length === 0
+      ) {
+        localStorage.removeItem(STORAGE_KEY);
         router.push("/");
         return;
       }

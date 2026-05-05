@@ -3,32 +3,36 @@
 import { useCallback, useMemo, useState } from "react";
 
 import type { Deal, PresentationData } from "@/lib/types";
-import { PRESENTATION_STAGES } from "@/lib/constants";
 import Header from "@/components/Header";
 import DealColumn from "@/components/DealColumn";
 import ClientDetailOverlay from "@/components/ClientDetailOverlay";
 
-const ALL_STAGES = [...PRESENTATION_STAGES];
-
 export default function PresentationBoard({ data }: { data: PresentationData }) {
+  const allStages = useMemo(() => data.stages, [data.stages]);
+
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
-  const [visibleStages, setVisibleStages] = useState<string[]>([...ALL_STAGES]);
+  const [visibleStages, setVisibleStages] = useState<string[]>(() => [
+    ...data.stages,
+  ]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const toggleStage = useCallback((stage: string) => {
-    setVisibleStages((prev) => {
-      if (prev.includes(stage)) {
-        if (prev.length <= 1) return prev;
-        return prev.filter((s) => s !== stage);
-      }
-      const next = [...ALL_STAGES].filter((s) => prev.includes(s) || s === stage);
-      return next;
-    });
-  }, []);
+  const toggleStage = useCallback(
+    (stage: string) => {
+      setVisibleStages((prev) => {
+        if (prev.includes(stage)) {
+          if (prev.length <= 1) return prev;
+          return prev.filter((s) => s !== stage);
+        }
+        const next = allStages.filter((s) => prev.includes(s) || s === stage);
+        return next;
+      });
+    },
+    [allStages],
+  );
 
   const dealsByStage = useMemo(() => {
     const map = new Map<string, Deal[]>();
-    for (const stage of PRESENTATION_STAGES) map.set(stage, []);
+    for (const stage of allStages) map.set(stage, []);
 
     for (const deal of data.deals) {
       if (selectedCategory && deal.category !== selectedCategory) continue;
@@ -37,7 +41,7 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
     }
 
     return map;
-  }, [data.deals, selectedCategory]);
+  }, [data.deals, selectedCategory, allStages]);
 
   const filteredVisibleStages = useMemo(() => {
     return visibleStages.filter(
@@ -50,7 +54,7 @@ export default function PresentationBoard({ data }: { data: PresentationData }) 
       <div className="mb-[8px]">
         <Header
           date={data.date}
-          allStages={ALL_STAGES}
+          allStages={allStages}
           visibleStages={visibleStages}
           onToggleStage={toggleStage}
           selectedCategory={selectedCategory}
